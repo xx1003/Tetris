@@ -17,6 +17,8 @@ using namespace std;
 //공백 = 0;
 //▦ = 1;
 //■ = 2;
+//이미 쌓인 블럭 = 3;
+//블럭이 쌓이는 맨 밑바닥 = 4;
 
 void CursorView(char show) {
     HANDLE hConsole;
@@ -362,13 +364,18 @@ public:
             table[i][0] = 1;
             table[i][x - 1] = 1;
         }
+
+        //맨 밑바닥 감지용 4
+        for (int i = 1; i < x - 1; i++) {
+            table[y - 1][i] = 4;
+        }
     }
     //게임판 그리는 함수
     void DrawGameTable() {
         for (int i = 0; i < y; i++) {
             for (int j = 0; j < x; j++) {
-                if (table[i][j] == 1)cout << "▦";
-                else if (table[i][j] == 2)cout << "■";
+                if (table[i][j] == 1 || table[i][j]==4)cout << "▦";
+                else if (table[i][j] == 2||table[i][j]==3)cout << "■";
                 else cout << "  ";
             }
             cout << "\n";
@@ -432,6 +439,26 @@ public:
                     blockObject->setY(backupBlock.getY());
                     return;
                 }
+                else if (table[Y][X] == 3) { //이미 쌓여진 블럭과 접촉
+                    copy(backupTable.begin(), backupTable.end(), table.begin());
+                    blockObject->setX(backupBlock.getX());
+                    blockObject->setY(backupBlock.getY());
+                    if (key == DOWN) {
+                        BuildBlock();
+                        createBlock();
+                    }
+                    return;
+                }
+                else if (table[Y][X] == 4) {
+                    copy(backupTable.begin(), backupTable.end(), table.begin());
+                    blockObject->setX(backupBlock.getX());
+                    blockObject->setY(backupBlock.getY());
+                    if (key == DOWN) {
+                        BuildBlock();
+                        createBlock();
+                    }
+                    return;
+                }
             }
         }
     }
@@ -465,13 +492,27 @@ public:
                 if (blockValue != 2)continue;
 
                 if (table[Y][X] == 0) {
-                    table[Y][X] = blockValue;
+                    table[Y][X] = blockObject->getShape(blockObject->getRotationCount(), i, j);
+
                 }
-                else if (table[Y][X] == 1) {
+                else if (table[Y][X] == 1||table[Y][X]==3||table[Y][X]==4) {
                     copy(backupTable.begin(), backupTable.end(), table.begin());
                     blockObject->setRotationCount(backupBlock.getRotationCount());
                     return;
                 }
+            }
+        }
+    }
+
+    //블럭 테이블에 쌓기
+    void BuildBlock() {
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                int Y = j + blockObject->getY();
+                int X = i + blockObject->getX();
+                int blockValue = blockObject->getShape(blockObject->getRotationCount(), i, j);
+                if (blockValue != 2)continue;
+                table[Y][X] = 3;
             }
         }
     }
@@ -494,29 +535,23 @@ public:
                     switch (nSelect) {
                     case UP:
                         gt->RotateBlock();
-                        gotoxy(0, 0);
-                        gt->DrawGameTable();
                         break;
                     case DOWN:
                         gt->MoveBlock(DOWN);
-                        gotoxy(0, 0);
-                        gt->DrawGameTable();
                         break;
                     case LEFT:
                         gt->MoveBlock(LEFT);
-                        gotoxy(0, 0);
-                        gt->DrawGameTable();
                         break;
                     case RIGHT:
                         gt->MoveBlock(RIGHT);
-                        gotoxy(0, 0);
-                        gt->DrawGameTable();
                         break;
                     default:
                         break;
                     }
                 }
             }
+            gotoxy(0, 0);
+            gt->DrawGameTable();
         }
     }
     ~Gameplay() {
